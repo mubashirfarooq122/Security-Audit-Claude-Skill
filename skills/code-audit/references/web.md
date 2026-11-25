@@ -1,6 +1,6 @@
 # Web variant checklist
 
-Standards: OWASP ASVS v5.0.0 (level from `--level`), OWASP Top 10, OWASP API Security Top 10 (2023), WCAG 2.2 AA (2.1 AA minimum), NIST SSDF, Clean Code.
+Standards: OWASP ASVS v5.0.0 (level from `--level`), OWASP Top 10, OWASP API Security Top 10 (2023), WCAG 2.2 AA (2.1 AA minimum) + WAI-ARIA, Core Web Vitals & HTTP/TLS RFCs, ISO/IEC 25010, GDPR/CCPA/CPRA, SOC 2 / ISO 27001 (governance mapping), NIST SSDF, Clean Code.
 Applies to server (Node/Express/Nest/Next API, Django/Flask/FastAPI, Rails, Spring, ASP.NET, Laravel, Go, etc.) and browser code (React/Vue/Angular/Svelte, templates). Identify the framework first and apply its secure defaults.
 
 Level gating: **l1** = items marked (1). **l2** = (1)+(2). **l3** = all, including (3).
@@ -47,6 +47,7 @@ Level gating: **l1** = items marked (1). **l2** = (1)+(2). **l3** = all, includi
 **Transport, headers, CORS (ASVS V3, V12, V13, A02)**
 - (1) CORS: `Access-Control-Allow-Origin` reflected from `Origin` or `*` with credentials; `null` origin allowed; regex allowing suffix-match spoof.
 - (1) CSP absent or `unsafe-inline`/`unsafe-eval`/wildcards on scripts (2); HSTS, `X-Content-Type-Options`, `frame-ancestors`/`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` (2); `helmet`/Django `SECURE_*`/Spring Security headers config.
+- (1) Server/proxy config allows TLS < 1.2 or weak ciphers (nginx `ssl_protocols`, Node `minVersion`, ALB policy), no HTTP->HTTPS redirect, HSTS missing `max-age` >= 1 year / `includeSubDomains` (2).
 - (2) Mixed content, http:// endpoints in prod config, third-party scripts without SRI (3), `postMessage` without origin check, `window.open` without `noopener`.
 
 **API & resource consumption (ASVS V4, API4/6/9/10)**
@@ -75,9 +76,33 @@ Level gating: **l1** = items marked (1). **l2** = (1)+(2). **l3** = all, includi
 Report only what is determinable from code/markup; visual contrast needs runtime check -> Needs Verification.
 - (1) `<img>` without `alt` (or decorative without `alt=""`) SC 1.1.1; icon-only buttons/links without accessible name (`aria-label`) SC 4.1.2/2.4.4; form inputs without `<label>`/`aria-labelledby` SC 1.3.1/3.3.2.
 - (1) Non-semantic interactive elements (`<div onClick>` without role/tabindex/key handlers) SC 2.1.1/4.1.2; `tabindex` > 0; `outline: none` without replacement SC 2.4.7 (2.4.11 focus not obscured in 2.2).
+- (1) Keyboard operability: every interactive control reachable and operable by keyboard, no keyboard traps, skip-to-content link (SC 2.1.1/2.1.2/2.4.1); visible focus indicator on all focusable elements (SC 2.4.7).
+- (1) Colour contrast: from CSS/theme tokens you can compute ratios; flag text pairs < 4.5:1 (normal) / 3:1 (large text, UI components, SC 1.4.3/1.4.11) as Confirmed only when both colors are static literals; dynamic/themed/image backgrounds -> Needs Verification.
+- (1) WAI-ARIA: invalid/redundant roles, `aria-*` referencing missing IDs, `aria-hidden` on focusable elements, roles missing required states (`aria-expanded`, `aria-checked`), ARIA used where native HTML works (first rule of ARIA).
+- Legal note: map WCAG failures to ADA / Section 508 / European Accessibility Act exposure in the finding's Impact.
 - (2) Missing `lang` on `<html>` SC 3.1.1; heading order/landmarks SC 1.3.1/2.4.1; dialogs without focus trap/`aria-modal`/Escape handling; live regions for async status SC 4.1.3; autoplay media w/o controls SC 1.4.2; error identification/association (`aria-describedby`, `aria-invalid`) SC 3.3.1; pointer target size < 24px SC 2.5.8 (CSS evidence); drag-only interactions without alternative SC 2.5.7; `autocomplete` tokens on identity fields SC 1.3.5.
 - (2) Viewport meta disabling zoom (`user-scalable=no`, `maximum-scale=1`) SC 1.4.4; text in images.
 - Privacy compliance (code-level): cookies/trackers set before consent, third-party analytics SDKs loading unconditionally, PII sent to third parties (GDPR/CCPA hygiene; flag as Needs Verification if consent logic is external).
+
+## E. Performance, SEO & Quality (Core Web Vitals, HTTP RFCs, ISO/IEC 25010)
+
+Code shows causes, not measurements: report measured LCP/INP/CLS as Needs Verification (Lighthouse/CrUX/WebPageTest); report code causes as findings (Low/Medium).
+- (2) **LCP causes:** hero image not preloaded or lazy-loaded above the fold (`loading="lazy"` on LCP image), no `fetchpriority="high"`, huge unoptimized images (no `srcset`/`sizes`, no WebP/AVIF), render-blocking CSS/JS in `<head>` without `defer`/`async`, webfont without `font-display`, client-only rendering of main content, large synchronous bundles (no code splitting).
+- (2) **INP causes:** long synchronous handlers, heavy work on main thread (large JSON parse, sync loops), no debouncing on input handlers, excessive re-renders (missing memoization/keys, state too high in tree), third-party scripts loaded eagerly.
+- (2) **CLS causes:** `<img>`/`<video>`/iframes without `width`/`height` or `aspect-ratio`, late-injected banners/ads without reserved space, font swap without metric overrides, animations on layout properties instead of `transform`.
+- (2) **Transfer/caching:** no Brotli/Gzip config for text assets; static assets without long-lived `Cache-Control: immutable` + content-hashed filenames; HTML cached incorrectly (or sensitive pages cacheable, see V14); missing ETag/Last-Modified; no CDN; HTTP/1.1 only; unminified/unbundled JS/CSS; source maps public; duplicate dependencies bloating bundles.
+- (2) **SEO & metadata (where public pages exist):** missing/duplicate `<title>` and `meta description`, no canonical `<link rel="canonical">`, unclean/parameterized URLs for content, missing `robots.txt`/sitemap (or `robots.txt` blocking prod / `noindex` left on in prod; or exposing sensitive paths), missing Open Graph/Twitter tags, missing structured data (JSON-LD) where relevant, client-rendered content invisible to crawlers (no SSR/SSG), broken heading hierarchy, soft-404 handling, `hreflang` errors, missing `lang`.
+- (2) **Quality (ISO/IEC 25010):** reliability (no timeouts/retries/circuit-breakers on outbound calls, no graceful shutdown, no health endpoints), maintainability (test coverage of security-critical code absent, lint/type-check not enforced in CI), compatibility (browser support target undefined, polyfills missing), usability (no error/empty/loading states).
+- (3) Performance budgets and monitoring absent from CI (Lighthouse CI, bundle-size limit).
+
+## F. Privacy & Governance (GDPR, CCPA/CPRA, SOC 2, ISO/IEC 27001)
+
+- (1) Analytics/ads/tracking scripts and cookies set before consent; no consent banner/CMP wiring in code; consent state not honored by server/tags; "reject" path missing (GDPR Art. 7, ePrivacy). External CMP config -> Needs Verification.
+- (1) PII over-collection (fields not needed, logged, or sent to third parties), PII/tokens in URLs and analytics events, unencrypted PII at rest where code defines storage (GDPR Art. 5(1)(c), 32).
+- (2) Data-subject rights absent in code: no account/data deletion or export endpoint, deletion that leaves copies in logs/caches/backups (GDPR Art. 15/17, CCPA delete/know); no opt-out of sale/share signal (GPC `Sec-GPC` header honored?) for CCPA/CPRA.
+- (2) Retention: no TTL/purge jobs for logs, sessions, soft-deleted records; privacy-policy-listed processors not matching third-party scripts/SDKs (Needs Verification).
+- (2) SOC 2 / ISO 27001 evidence hooks: audit logs for access/change, RBAC enforced and reviewable, secrets management, change management/CI approvals, dependency scanning in CI, backup/restore config, incident-logging. Report gaps as control-mapped Low/Medium; actual certification readiness is out of scope (Needs Verification).
+- (3) Data-flow mapping: PII inventory, cross-border transfer paths (SCC/regions in cloud config), DPIA triggers (profiling, sensitive categories).
 
 ## Suggested grep seeds (confirm every hit by reading)
 

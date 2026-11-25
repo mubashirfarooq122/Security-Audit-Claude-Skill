@@ -2,8 +2,8 @@
 
 A [Claude Code](https://claude.com/claude-code) skill that runs an evidence-backed, read-only full code audit for **web**, **android**, and **ios** codebases.
 
-- Four pillars: Security & Auth/Crypto · Code Quality, Concurrency & Logic · Dependencies, Config & Supply Chain · Accessibility & Platform Compliance
-- Standards: OWASP ASVS v5.0.0, OWASP Top 10 / API Top 10, WCAG 2.2 AA (web); OWASP MASVS/MASTG, Mobile Top 10, Play / Apple policy (mobile)
+- Four pillars: Security & Auth/Crypto · Code Quality, Concurrency, Logic & Performance · Dependencies, Config & Supply Chain · Accessibility, Privacy & Platform Compliance (incl. web SEO and Core Web Vitals causes)
+- Standards: OWASP ASVS v5.0.0, OWASP Top 10 / API Top 10, WCAG 2.2 AA + WAI-ARIA, Core Web Vitals, ISO/IEC 25010, GDPR/CCPA/HIPAA, SOC 2 / ISO 27001 (web); OWASP MASVS/MASTG (MAS-L1/L2/R/P), Mobile Top 10, Google Play / Apple App Store Review, HIG, Material Design (mobile)
 - Every finding cites `file:line`, exploitability/impact, a minimal patch, and a standard ID
 - Findings are triaged: **Confirmed**, **Needs Runtime/Dynamic Verification**, **Out of Scope / N/A**
 - Read-only: it never edits your code; fixes appear as patches in the report

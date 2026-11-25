@@ -3,9 +3,9 @@
 ## 1. Pillars (audit all four)
 
 1. **Security & Auth/Crypto**: injection, broken access control / IDOR / BOLA / BFLA, authn/session/token flaws, SSRF, insecure deserialization, hardcoded secrets, weak crypto, unsafe network/TLS config.
-2. **Code Quality, Concurrency & Logic**: business-logic flaws (price/quantity tampering, workflow skipping, replay, missing idempotency), race conditions/TOCTOU/state desync, swallowed exceptions and fail-open error handling, resource/memory/handle leaks, high cyclomatic complexity, dead code, misleading comments.
+2. **Code Quality, Concurrency & Logic**: business-logic flaws (price/quantity tampering, workflow skipping, replay, missing idempotency), race conditions/TOCTOU/state desync, swallowed exceptions and fail-open error handling, resource/memory/handle leaks, high cyclomatic complexity, dead code, misleading comments; performance efficiency (hot-path N+1, blocking I/O, unbounded work, oversized assets) per ISO/IEC 25010.
 3. **Dependencies, Config & Supply Chain**: outdated or risky dependencies (judge from manifests/lockfiles only; do not invent CVEs), unpinned or unverified build steps, insecure CI/IaC/Docker config, debug flags enabled, missing logging/auditability, secrets in repo.
-4. **Accessibility & Platform Compliance**: semantic/a11y attributes in code, manifest/privacy/permission hygiene, store-policy requirements.
+4. **Accessibility & Platform Compliance**: semantic/a11y attributes in code, manifest/privacy/permission hygiene, store-policy requirements, privacy/regulatory hygiene (GDPR/CCPA/HIPAA), and for web SEO/metadata and Core Web Vitals causes.
 
 ## 2. Evidence gate (every Confirmed finding must pass all five)
 
@@ -55,6 +55,12 @@ State likelihood x impact in one line when assigning Critical/High. Do not infla
 - **WCAG 2.2** (2.1 where noted): cite success criterion e.g. `WCAG 2.2 SC 1.1.1`.
 - **NIST SSDF (SP 800-218)**: `PW.x`, `PS.x`, `RV.x`, `PO.x` practice IDs.
 - **CWE**: add where clear (e.g. CWE-89). Never guess a CWE number.
+- **ISO/IEC 25010** (product quality model): cite characteristic for quality/performance findings, e.g. `ISO/IEC 25010: Performance efficiency`, `Reliability`, `Maintainability`, `Usability/Accessibility`, `Security`.
+- **Core Web Vitals** (LCP, INP, CLS) and HTTP/TLS RFCs (e.g. RFC 9110/9111 caching, RFC 8446 TLS 1.3, RFC 6797 HSTS): cite for web performance/transport findings. Thresholds (good): LCP <= 2.5s, INP <= 200ms, CLS <= 0.1. Measured values always need runtime verification (Lighthouse/CrUX); code can only show causes.
+- **Privacy & regulatory**: GDPR (Art. 5 minimization, 6/7 lawful basis & consent, 17 erasure, 25 privacy by design, 32 security of processing), CCPA/CPRA (notice, opt-out of sale/share, deletion), HIPAA Security Rule (health data), PCI DSS (card data). Cite article/section only when sure. Compliance is **never** "Confirmed" from code alone unless the code plainly contradicts the rule (e.g. trackers fire before consent); otherwise Needs Verification.
+- **Governance frameworks** (SOC 2 Trust Services Criteria, ISO/IEC 27001 Annex A): map logging, access control, change management, and secrets findings to a control family (e.g. `SOC 2 CC6 logical access`, `ISO 27001 A.8 technological controls`) as a secondary reference.
+- **Legal accessibility**: ADA (US), Section 508 (US public sector), European Accessibility Act (EU): note as the legal driver when reporting WCAG failures; the technical ref stays the WCAG SC.
+- **Platform policy**: Apple App Store Review Guidelines (by section number, e.g. 5.1.1 data collection), Apple HIG, Google Play Developer Policy (Data Safety, User Data, SDK policies), Material Design guidelines.
 - **Quality**: no formal ID: cite principle (e.g. `Clean Code: error handling`, `CERT`/`Effective Java`/`Kotlin coding conventions`/`Swift API Design Guidelines`).
 
 ## 6. Level semantics (`--level`)
@@ -62,6 +68,8 @@ State likelihood x impact in one line when assigning Critical/High. Do not infla
 - **l1** (baseline): high-confidence, commonly-exploited issues; every Critical/High; skip exhaustive hardening.
 - **l2** (default, standard apps handling sensitive data): l1 + full checklist of the variant file, defense-in-depth, logging, config hygiene.
 - **l3** (high assurance: finance, health, critical infra): l2 + architecture/trust-boundary review, crypto key-lifecycle, anti-tamper/resilience (mobile), exhaustive authorization matrix, supply-chain integrity (pinning, provenance, signing).
+**MASVS profile mapping (mobile):** l1 = MAS-L1 (baseline); l2 = MAS-L1 + MAS-L2 (defense-in-depth) + MAS-P (privacy, MASVS-PRIVACY) checks; l3 = l2 + MAS-R (resilience / reverse-engineering, MASVS-RESILIENCE). Label each mobile finding with its profile (L1/L2/R/P) when known.
+Performance/SEO/quality findings are capped at Medium unless they cause a demonstrable outage, data loss, or legal exposure; they are never Critical.
 Report the level used and which checks were gated to higher levels but skipped.
 
 ## 7. Secrets handling
